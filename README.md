@@ -6,5 +6,5 @@ based on a [tutorial](https://mbuffett.com/posts/bevy-snake-tutorial/) by [mbuff
 ## TODO
 
 - [x] tutorial base
-- [ ] tutorial homework [here](https://mbuffett.com/posts/bevy-snake-tutorial/#homework)
+- [x] tutorial homework [here](https://mbuffett.com/posts/bevy-snake-tutorial/#homework)
 - [ ] score text

@@ -15,7 +15,7 @@ pub struct SnakeSegment;
 pub struct GrowthEvent;
 
 #[derive(Default)]
-pub struct SnakeSegments(Vec<Entity>);
+pub struct SnakeSegments(pub Vec<Entity>);
 
 #[derive(Default)]
 pub struct LastTailPosition(Option<Position>);
