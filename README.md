@@ -7,4 +7,5 @@ based on a [tutorial](https://mbuffett.com/posts/bevy-snake-tutorial/) by [mbuff
 
 - [x] tutorial base
 - [x] tutorial homework [here](https://mbuffett.com/posts/bevy-snake-tutorial/#homework)
-- [ ] score text
+- [x] score text
+- [ ] menu and death screen

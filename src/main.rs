@@ -3,10 +3,12 @@ use bevy::prelude::*;
 
 use bevy::{sprite::ColorMaterial, DefaultPlugins};
 use food::{food_spawner, Food};
+use score::ScorePlugin;
 use snake_parts::*;
 
 mod coord_system;
 mod food;
+mod score;
 mod snake_parts;
 
 pub struct GameOverEvent;
@@ -25,7 +27,7 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
         food_material: materials.add(Color::rgb(1.0, 0.0, 1.0).into()),
     });
     commands.insert_resource(SnakeSegments::default());
-    commands.insert_resource(LastTailPosition::default())
+    commands.insert_resource(LastTailPosition::default());
 }
 
 fn game_over(
@@ -93,5 +95,6 @@ fn main() {
         )
         .add_system(food_spawner.system())
         .add_plugins(DefaultPlugins)
+        .add_plugin(ScorePlugin)
         .run();
 }
