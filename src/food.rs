@@ -1,6 +1,6 @@
 use crate::{
     coord_system::{ARENA_HEIGHT, ARENA_WIDTH},
-    snake_parts::{SnakeHead, SnakeSegment, SnakeSegments},
+    snake_parts::{SnakeHead, SnakeSegment},
 };
 use bevy::prelude::*;
 use rand::random;
