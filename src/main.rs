@@ -1,6 +1,8 @@
+use bevy::core::FixedTimestep;
 use bevy::prelude::*;
 
 use bevy::{sprite::ColorMaterial, DefaultPlugins};
+use snake_parts::{snake_movement, snake_movement_input, SnakeMovement};
 
 mod coord_system;
 mod snake_parts;
@@ -30,7 +32,17 @@ fn main() {
             "game_setup",
             SystemStage::single(snake_parts::spawn_snake.system()),
         )
-        .add_system(snake_parts::snake_movement.system())
+        .add_system(
+            snake_movement_input
+                .system()
+                .label(SnakeMovement::Input)
+                .before(SnakeMovement::Movement),
+        )
+        .add_system_set(
+            SystemSet::new()
+                .with_run_criteria(FixedTimestep::step(0.20))
+                .with_system(snake_movement.system()),
+        )
         .add_system_set_to_stage(
             CoreStage::PostUpdate,
             SystemSet::new()

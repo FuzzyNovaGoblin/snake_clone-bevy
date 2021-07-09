@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{math, prelude::*};
 
 use crate::{
     coord_system::{Position, Size as MySize},
@@ -50,21 +50,14 @@ impl SnakeHead {
 /// # Functions
 
 pub fn snake_movement(
-    keyboard_input: Res<Input<KeyCode>>,
-    mut head_positions: Query<&mut Position, With<SnakeHead>>,
+    mut head_positions: Query<(&mut Position, &SnakeHead)>,
 ) {
-    for mut pos in head_positions.iter_mut() {
-        if keyboard_input.pressed(KeyCode::Left) || keyboard_input.pressed(KeyCode::A) {
-            pos.x -= 1;
-        }
-        if keyboard_input.pressed(KeyCode::Right) || keyboard_input.pressed(KeyCode::D) {
-            pos.x += 1;
-        }
-        if keyboard_input.pressed(KeyCode::Up) || keyboard_input.pressed(KeyCode::W) {
-            pos.y += 1;
-        }
-        if keyboard_input.pressed(KeyCode::Down) || keyboard_input.pressed(KeyCode::S) {
-            pos.y -= 1;
+    for  (mut pos, head) in head_positions.iter_mut() {
+        match head.direction {
+            Direction::Left => pos.x -= 1,
+            Direction::Right => pos.x += 1,
+            Direction::Up => pos.y += 1,
+            Direction::Down => pos.y -= 1,
         }
     }
 }
@@ -82,4 +75,25 @@ pub fn spawn_snake(mut commands: Commands, materials: Res<Materials>) {
         })
         .insert(Position { x: 3, y: 3 })
         .insert(MySize::square(0.8));
+}
+
+pub fn snake_movement_input(keyboard_input: Res<Input<KeyCode>>, mut heads: Query<&mut SnakeHead>) {
+    for mut head in heads.iter_mut() {
+        let dir: Direction =
+            if keyboard_input.pressed(KeyCode::Left) || keyboard_input.pressed(KeyCode::A) {
+                Direction::Left
+            } else if keyboard_input.pressed(KeyCode::Right) || keyboard_input.pressed(KeyCode::D) {
+                Direction::Right
+            } else if keyboard_input.pressed(KeyCode::Up) || keyboard_input.pressed(KeyCode::W) {
+                Direction::Up
+            } else if keyboard_input.pressed(KeyCode::Down) || keyboard_input.pressed(KeyCode::S) {
+                Direction::Down
+            } else {
+                head.direction
+            };
+
+        if head.direction.opposite() != dir {
+            head.direction = dir;
+        }
+    }
 }
