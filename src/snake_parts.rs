@@ -9,6 +9,7 @@ use crate::{
 /// # Data
 pub struct SnakeHead {
     direction: Direction,
+    next_direction: Direction,
 }
 pub struct SnakeSegment;
 pub struct GrowthEvent;
@@ -50,12 +51,13 @@ impl Direction {
 /// # Functions
 pub fn snake_movement(
     segments: ResMut<SnakeSegments>,
-    mut heads: Query<(Entity, &SnakeHead)>,
+    mut heads: Query<(Entity, &mut SnakeHead)>,
     mut positions: Query<&mut Position>,
     mut last_tail_pos: ResMut<LastTailPosition>,
     mut game_over_writer: EventWriter<GameOverEvent>,
 ) {
-    if let Some((head_entity, head)) = heads.iter_mut().next() {
+    if let Some((head_entity, mut head)) = heads.iter_mut().next() {
+        head.direction = head.next_direction;
         let segment_positions = segments
             .0
             .iter()
@@ -91,7 +93,6 @@ pub fn snake_movement(
             *positions.get_mut(*segment).unwrap() = *pos;
         }
         last_tail_pos.0 = Some(*segment_positions.last().unwrap());
-
     }
 }
 
@@ -110,6 +111,7 @@ pub fn spawn_snake(
             })
             .insert(SnakeHead {
                 direction: Direction::Up,
+                next_direction: Direction::Up,
             })
             .insert(Position { x: 3, y: 3 })
             .insert(MySize::square(0.8))
@@ -134,11 +136,11 @@ pub fn snake_movement_input(keyboard_input: Res<Input<KeyCode>>, mut heads: Quer
             } else if keyboard_input.pressed(KeyCode::Down) || keyboard_input.pressed(KeyCode::S) {
                 Direction::Down
             } else {
-                head.direction
+                head.next_direction
             };
 
-        if head.direction.opposite() != dir {
-            head.direction = dir;
+        if head.next_direction.opposite() != dir {
+            head.next_direction = dir;
         }
     }
 }
@@ -177,12 +179,12 @@ pub fn snake_eating(
 
 pub fn snake_growth(
     commands: Commands,
-    mut growthReader: EventReader<GrowthEvent>,
+    mut growth_reader: EventReader<GrowthEvent>,
     tail_pos: Res<LastTailPosition>,
     materials: Res<Materials>,
     mut segments: ResMut<SnakeSegments>,
 ) {
-    if growthReader.iter().next().is_some() {
+    if growth_reader.iter().next().is_some() {
         segments.0.push(spawn_segment(
             commands,
             &materials.segment_material,
