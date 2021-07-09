@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 
 use crate::{
-    coord_system::{Position, Size as MySize},
+    coord_system::{Position, Size as MySize, ARENA_HEIGHT, ARENA_WIDTH},
     food::Food,
-    Materials,
+    GameOverEvent, Materials,
 };
 
 /// # Data
@@ -47,22 +47,13 @@ impl Direction {
     }
 }
 
-impl SnakeHead {
-    pub fn get_dir(&self) -> Direction {
-        self.direction
-    }
-    pub fn set_dir(&mut self, dir: Direction) {
-        self.direction = dir;
-    }
-}
-
 /// # Functions
-
 pub fn snake_movement(
     segments: ResMut<SnakeSegments>,
     mut heads: Query<(Entity, &SnakeHead)>,
     mut positions: Query<&mut Position>,
     mut last_tail_pos: ResMut<LastTailPosition>,
+    mut game_over_writer: EventWriter<GameOverEvent>,
 ) {
     if let Some((head_entity, head)) = heads.iter_mut().next() {
         let segment_positions = segments
@@ -72,7 +63,7 @@ pub fn snake_movement(
             .collect::<Vec<Position>>();
 
         let mut head_pos = positions.get_mut(head_entity).unwrap();
-        match head.direction {
+        match &head.direction {
             Direction::Left => {
                 head_pos.x -= 1;
             }
@@ -87,10 +78,20 @@ pub fn snake_movement(
             }
         }
 
+        if head_pos.x < 0
+            || head_pos.x >= ARENA_WIDTH as i32
+            || head_pos.y < 0
+            || head_pos.y >= ARENA_HEIGHT as i32
+            || segment_positions.contains(&*head_pos)
+        {
+            game_over_writer.send(GameOverEvent)
+        }
+
         for (pos, segment) in segment_positions.iter().zip(segments.0.iter().skip(1)) {
             *positions.get_mut(*segment).unwrap() = *pos;
         }
         last_tail_pos.0 = Some(*segment_positions.last().unwrap());
+
     }
 }
 
@@ -182,7 +183,6 @@ pub fn snake_growth(
     mut segments: ResMut<SnakeSegments>,
 ) {
     if growthReader.iter().next().is_some() {
-        println!("in here",);
         segments.0.push(spawn_segment(
             commands,
             &materials.segment_material,

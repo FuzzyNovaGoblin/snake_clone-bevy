@@ -2,15 +2,14 @@ use bevy::core::FixedTimestep;
 use bevy::prelude::*;
 
 use bevy::{sprite::ColorMaterial, DefaultPlugins};
-use food::food_spawner;
-use snake_parts::{
-    snake_eating, snake_growth, snake_movement, snake_movement_input, GrowthEvent,
-    LastTailPosition, SnakeMovement, SnakeSegments,
-};
+use food::{food_spawner, Food};
+use snake_parts::*;
 
 mod coord_system;
 mod food;
 mod snake_parts;
+
+pub struct GameOverEvent;
 
 pub struct Materials {
     head_material: Handle<ColorMaterial>,
@@ -29,6 +28,23 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     commands.insert_resource(LastTailPosition::default())
 }
 
+fn game_over(
+    mut cmds: Commands,
+    mut game_over_event_reader: EventReader<GameOverEvent>,
+    segments_res: ResMut<SnakeSegments>,
+    segments: Query<Entity, With<SnakeSegment>>,
+    head_q: Query<Entity, With<SnakeHead>>,
+    materials: Res<Materials>,
+    food: Query<Entity, With<Food>>,
+) {
+    if game_over_event_reader.iter().next().is_some() {
+        for ent in food.iter().chain(segments.iter()).chain(head_q.iter()) {
+            cmds.entity(ent).despawn();
+        }
+        spawn_snake(cmds, materials, segments_res);
+    }
+}
+
 fn main() {
     App::build()
         .insert_resource(WindowDescriptor {
@@ -38,6 +54,7 @@ fn main() {
             ..Default::default()
         })
         .add_event::<GrowthEvent>()
+        .add_event::<GameOverEvent>()
         .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
         .add_startup_system(setup.system())
         .add_startup_stage(
@@ -66,7 +83,13 @@ fn main() {
                         .label(SnakeMovement::Eating)
                         .after(SnakeMovement::Movement),
                 )
-                .with_system(snake_growth.system().after(SnakeMovement::Eating)),
+                .with_system(
+                    snake_growth
+                        .system()
+                        .label(SnakeMovement::Growth)
+                        .after(SnakeMovement::Eating),
+                )
+                .with_system(game_over.system().after(SnakeMovement::Growth)),
         )
         .add_system(food_spawner.system())
         .add_plugins(DefaultPlugins)

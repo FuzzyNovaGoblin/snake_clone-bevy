@@ -12,7 +12,6 @@ pub fn food_spawner(mut commands: Commands, materials: Res<Materials>, foods: Qu
             (random::<f32>() * ARENA_WIDTH as f32) as i32,
             (random::<f32>() * ARENA_HEIGHT as f32) as i32,
         );
-        println!("points: {}, {}", points.0, points.1);
         commands
             .spawn_bundle(SpriteBundle {
                 material: materials.food_material.clone(),
