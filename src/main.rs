@@ -3,7 +3,7 @@ use bevy::prelude::*;
 
 use bevy::{sprite::ColorMaterial, DefaultPlugins};
 use food::food_spawner;
-use snake_parts::{snake_movement, snake_movement_input, SnakeMovement};
+use snake_parts::{snake_movement, snake_movement_input, SnakeMovement, SnakeSegments};
 
 mod coord_system;
 mod food;
@@ -11,6 +11,7 @@ mod snake_parts;
 
 pub struct Materials {
     head_material: Handle<ColorMaterial>,
+    segment_material: Handle<ColorMaterial>,
     food_material: Handle<ColorMaterial>,
 }
 
@@ -18,8 +19,10 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.insert_resource(Materials {
         head_material: materials.add(Color::rgb(0.7, 0.7, 0.7).into()),
+        segment_material: materials.add(Color::rgb(0.3, 0.3, 0.3).into()),
         food_material: materials.add(Color::rgb(1.0, 0.0, 1.0).into()),
     });
+    commands.insert_resource(SnakeSegments::default());
 }
 
 fn main() {
@@ -45,7 +48,7 @@ fn main() {
         .add_system_set(
             SystemSet::new()
                 .label(SnakeMovement::Movement)
-                .with_run_criteria(FixedTimestep::step(0.20))
+                .with_run_criteria(FixedTimestep::step(0.150))
                 .with_system(snake_movement.system()),
         )
         .add_system_set_to_stage(

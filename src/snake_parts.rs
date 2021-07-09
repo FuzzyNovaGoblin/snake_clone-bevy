@@ -1,4 +1,4 @@
-use bevy::{math, prelude::*};
+use bevy::prelude::*;
 
 use crate::{
     coord_system::{Position, Size as MySize},
@@ -9,6 +9,10 @@ use crate::{
 pub struct SnakeHead {
     direction: Direction,
 }
+pub struct SnakeSegment;
+
+#[derive(Default)]
+pub struct SnakeSegments(Vec<Entity>);
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Direction {
@@ -50,31 +54,64 @@ impl SnakeHead {
 /// # Functions
 
 pub fn snake_movement(
-    mut head_positions: Query<(&mut Position, &SnakeHead)>,
+    segments: ResMut<SnakeSegments>,
+    mut heads: Query<(Entity, &SnakeHead)>,
+    mut positions: Query<&mut Position>,
 ) {
-    for  (mut pos, head) in head_positions.iter_mut() {
+    if let Some((head_entity, head)) = heads.iter_mut().next() {
+        let segment_positions = segments
+            .0
+            .iter()
+            .map(|e| *positions.get_mut(*e).unwrap())
+            .collect::<Vec<Position>>();
+
+        let mut head_pos = positions.get_mut(head_entity).unwrap();
         match head.direction {
-            Direction::Left => pos.x -= 1,
-            Direction::Right => pos.x += 1,
-            Direction::Up => pos.y += 1,
-            Direction::Down => pos.y -= 1,
+            Direction::Left => {
+                head_pos.x -= 1;
+            }
+            Direction::Right => {
+                head_pos.x += 1;
+            }
+            Direction::Up => {
+                head_pos.y += 1;
+            }
+            Direction::Down => {
+                head_pos.y -= 1;
+            }
+        }
+
+        for (pos, segment) in segment_positions.iter().zip(segments.0.iter().skip(1)) {
+            *positions.get_mut(*segment).unwrap() = *pos;
         }
     }
 }
 
-pub fn spawn_snake(mut commands: Commands, materials: Res<Materials>) {
-    commands
-        .spawn_bundle(SpriteBundle {
-            material: materials.head_material.clone(),
-            sprite: Sprite::new(Vec2::new(10.0, 10.0)),
+pub fn spawn_snake(
+    mut commands: Commands,
+    materials: Res<Materials>,
+    mut segments: ResMut<SnakeSegments>,
+) {
+    segments.0 = vec![
+        commands
+            .spawn_bundle(SpriteBundle {
+                material: materials.head_material.clone(),
+                sprite: Sprite::new(Vec2::new(10.0, 10.0)),
 
-            ..Default::default()
-        })
-        .insert(SnakeHead {
-            direction: Direction::Up,
-        })
-        .insert(Position { x: 3, y: 3 })
-        .insert(MySize::square(0.8));
+                ..Default::default()
+            })
+            .insert(SnakeHead {
+                direction: Direction::Up,
+            })
+            .insert(Position { x: 3, y: 3 })
+            .insert(MySize::square(0.8))
+            .id(),
+        spawn_segment(
+            commands,
+            &materials.segment_material,
+            Position { x: 3, y: 2 },
+        ),
+    ];
 }
 
 pub fn snake_movement_input(keyboard_input: Res<Input<KeyCode>>, mut heads: Query<&mut SnakeHead>) {
@@ -97,3 +134,20 @@ pub fn snake_movement_input(keyboard_input: Res<Input<KeyCode>>, mut heads: Quer
         }
     }
 }
+
+pub fn spawn_segment(
+    mut commands: Commands,
+    material: &Handle<ColorMaterial>,
+    position: Position,
+) -> Entity {
+    commands
+        .spawn_bundle(SpriteBundle {
+            material: material.clone(),
+            ..Default::default()
+        })
+        .insert(SnakeSegment)
+        .insert(position)
+        .insert(MySize::square(0.65))
+        .id()
+}
+

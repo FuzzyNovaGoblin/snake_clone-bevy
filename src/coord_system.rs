@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 
-pub const ARENA_WIDTH: u32 = 10;
-pub const ARENA_HEIGHT: u32 = 10;
+pub const ARENA_WIDTH: u32 = 13;
+pub const ARENA_HEIGHT: u32 = 13;
 
+#[derive(Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Position {
     pub x: i32,
     pub y: i32,
