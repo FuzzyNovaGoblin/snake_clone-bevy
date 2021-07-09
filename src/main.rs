@@ -3,7 +3,10 @@ use bevy::prelude::*;
 
 use bevy::{sprite::ColorMaterial, DefaultPlugins};
 use food::food_spawner;
-use snake_parts::{snake_movement, snake_movement_input, SnakeMovement, SnakeSegments};
+use snake_parts::{
+    snake_eating, snake_growth, snake_movement, snake_movement_input, GrowthEvent,
+    LastTailPosition, SnakeMovement, SnakeSegments,
+};
 
 mod coord_system;
 mod food;
@@ -23,6 +26,7 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
         food_material: materials.add(Color::rgb(1.0, 0.0, 1.0).into()),
     });
     commands.insert_resource(SnakeSegments::default());
+    commands.insert_resource(LastTailPosition::default())
 }
 
 fn main() {
@@ -33,6 +37,7 @@ fn main() {
             height: 700.0,
             ..Default::default()
         })
+        .add_event::<GrowthEvent>()
         .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
         .add_startup_system(setup.system())
         .add_startup_stage(
@@ -45,17 +50,23 @@ fn main() {
                 .label(SnakeMovement::Input)
                 .before(SnakeMovement::Movement),
         )
-        .add_system_set(
-            SystemSet::new()
-                .label(SnakeMovement::Movement)
-                .with_run_criteria(FixedTimestep::step(0.150))
-                .with_system(snake_movement.system()),
-        )
         .add_system_set_to_stage(
             CoreStage::PostUpdate,
             SystemSet::new()
                 .with_system(coord_system::size_scaleing.system())
                 .with_system(coord_system::position_translation.system()),
+        )
+        .add_system_set(
+            SystemSet::new()
+                .with_run_criteria(FixedTimestep::step(0.150))
+                .with_system(snake_movement.system().label(SnakeMovement::Movement))
+                .with_system(
+                    snake_eating
+                        .system()
+                        .label(SnakeMovement::Eating)
+                        .after(SnakeMovement::Movement),
+                )
+                .with_system(snake_growth.system().after(SnakeMovement::Eating)),
         )
         .add_system(food_spawner.system())
         .add_plugins(DefaultPlugins)

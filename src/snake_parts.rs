@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     coord_system::{Position, Size as MySize},
+    food::Food,
     Materials,
 };
 
@@ -10,9 +11,13 @@ pub struct SnakeHead {
     direction: Direction,
 }
 pub struct SnakeSegment;
+pub struct GrowthEvent;
 
 #[derive(Default)]
 pub struct SnakeSegments(Vec<Entity>);
+
+#[derive(Default)]
+pub struct LastTailPosition(Option<Position>);
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Direction {
@@ -57,6 +62,7 @@ pub fn snake_movement(
     segments: ResMut<SnakeSegments>,
     mut heads: Query<(Entity, &SnakeHead)>,
     mut positions: Query<&mut Position>,
+    mut last_tail_pos: ResMut<LastTailPosition>,
 ) {
     if let Some((head_entity, head)) = heads.iter_mut().next() {
         let segment_positions = segments
@@ -84,6 +90,7 @@ pub fn snake_movement(
         for (pos, segment) in segment_positions.iter().zip(segments.0.iter().skip(1)) {
             *positions.get_mut(*segment).unwrap() = *pos;
         }
+        last_tail_pos.0 = Some(*segment_positions.last().unwrap());
     }
 }
 
@@ -151,3 +158,35 @@ pub fn spawn_segment(
         .id()
 }
 
+pub fn snake_eating(
+    mut commands: Commands,
+    mut growth_writer: EventWriter<GrowthEvent>,
+    foods: Query<(Entity, &Position), With<Food>>,
+    head_q: Query<&Position, With<SnakeHead>>,
+) {
+    if let Some(head_pos) = head_q.iter().next() {
+        for (e, pos) in foods.iter() {
+            if pos == head_pos {
+                commands.entity(e).despawn();
+                growth_writer.send(GrowthEvent);
+            }
+        }
+    }
+}
+
+pub fn snake_growth(
+    commands: Commands,
+    mut growthReader: EventReader<GrowthEvent>,
+    tail_pos: Res<LastTailPosition>,
+    materials: Res<Materials>,
+    mut segments: ResMut<SnakeSegments>,
+) {
+    if growthReader.iter().next().is_some() {
+        println!("in here",);
+        segments.0.push(spawn_segment(
+            commands,
+            &materials.segment_material,
+            tail_pos.0.unwrap(),
+        ));
+    }
+}
